@@ -1,0 +1,314 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "User Management";
+}
+
+
+<style type='text/css'>
+    /*.input-disabled {
+         background-color:#EBEBE4;
+         border:1px solid #ABADB3;
+         padding:2px 1px;
+     }*/
+
+     .contentContainer {
+        position: relative;
+        width: 500px;
+        margin: 5px auto;
+        /*padding-top: 30px;*/
+        /*background-color: #F7F9FA;*/
+        -webkit-border-radius: 5px;
+        -moz-border-radius: 5px;
+        -khtml-border-radius: 5px;
+        border-radius: 5px;
+    }
+
+       input[type="text"],  input[type="email"] {
+        margin-bottom: 0;
+        color: black;
+    }
+</style>
+
+@section scripts{
+
+    <script>
+        var allLocations;
+        var allUserTypes;
+        var newUserLocationId;
+
+        $(function () {
+            userSession.loadUserSession();
+            userSession.enforceLogin();
+            if (!userSession.isUserLoggedIn()) return;
+
+            var currentUser = userSession.getUserSession();
+            //var allUserTypes = ['System Admin', 'Facility Admin', 'Doctor Office Admin', 'Facility Staff', 'Doctor Office Staff'];
+            var allowedUserTypes = [];
+
+            if (currentUser.userType.description === 'System Admin') {
+                allowedUserTypes = ['System Admin', 'Facility Admin', 'Doctor Office Admin'];
+            } else if (currentUser.userType.description === 'Facility Admin') {
+                allowedUserTypes = ['Facility Admin', 'Facility Staff'];
+            } else if (currentUser.userType.description === 'Doctor Office Admin') {
+                allowedUserTypes = ['Doctor Office Admin', 'Doctor Office Staff'];
+            }
+
+            var selectUserType = $('#selectUserType');
+            selectUserType.append($("<option />").val('').text(''));
+            $.each(allowedUserTypes, function (key, value) {
+                selectUserType.append($("<option />").val(value).text(value));
+            });
+
+            ap_webApi.getLocations({}).success(function (data) {
+                allLocations = data.data;
+
+                var selectLocations = $('#selectLocation');
+                selectLocations.append($("<option />").val('').text(''));
+                $.each(allLocations, function (key, value) {
+                    selectLocations.append($("<option />").val(value.location_id).text(value.name));
+                });
+
+            }).fail(function (data) {
+                alert('Get existing locations failed');
+            });
+
+            ap_webApi.getStaffTypes().success(function (data) {
+                allUserTypes = data.data;
+            }).fail(function (data) {
+                alert('Get all user types failed');
+            });
+
+            $('#newUser').hide();
+        });
+
+        $('#selectUserType').on('change', function () {
+            var selected = this.value;
+            var currentUser = userSession.getUserSession();
+
+            if (selected == '') {
+                $('#newUser').hide();
+            } else {
+                $('#newUser').show();
+                $('#divSelectLocation').hide();
+
+                if (currentUser.userType.description == 'System Admin') {
+                    if (selected == 'System Admin') {
+                        //current system admin location, readonly
+                        useCurrentUserLocationOrBlank(true);
+                        makeLocationFieldsReadonly(true);
+                    } else if (selected == 'Facility Admin' || selected == 'Doctor Office Admin') {
+                        //blank out location, readonly because can't create location on the fly due to ap api limitation
+                        useCurrentUserLocationOrBlank(false);
+                        makeLocationFieldsReadonly(true);
+                        $('#divSelectLocation').show();
+                    }
+                } else {
+                    //facility and doctor office admin
+                    //use current user location, location readonly
+                    useCurrentUserLocationOrBlank(true);
+                    makeLocationFieldsReadonly(true);
+                }
+            }
+
+        });
+
+        $('#selectLocation').on('change', function () {
+            if (this.value) {
+                newUserLocationId = this.value;
+
+                allLocations.forEach(function (element, index, array) {
+                    if (element.location_id == newUserLocationId) {
+                        $('#txtLocationName').val(element.name);
+                        $('#txtAddress1').val(element.address1);
+                        $('#txtAddress2').val(element.address2);
+                        $('#txtCity').val(element.city);
+                        $('#txtState').val(element.state);
+                        $('#txtZip').val(element.zip);
+                        return;
+                    }
+                });
+            }
+        });
+
+        function makeLocationFieldsReadonly(readonly) {
+            $('#txtLocationName').attr('readonly', readonly);
+            $('#txtAddress1').attr('readonly', readonly);
+            $('#txtAddress2').attr('readonly', readonly);
+            $('#txtCity').attr('readonly', readonly);
+            $('#txtState').attr('readonly', readonly);
+            $('#txtZip').attr('readonly', readonly);
+        }
+
+        function useCurrentUserLocationOrBlank(useCurrent) {
+            var currentUser = userSession.getUserSession();
+            var location = currentUser.location;
+
+
+            if (useCurrent) {
+                $('#txtLocationName').val(location.name);
+                $('#txtAddress1').val(location.address1);
+                $('#txtAddress2').val(location.address2);
+                $('#txtCity').val(location.city);
+                $('#txtState').val(location.state);
+                $('#txtZip').val(location.zip);
+
+                newUserLocationId = currentUser.location.location_id;
+            } else {
+                $('#txtLocationName').val('');
+                $('#txtAddress1').val('');
+                $('#txtAddress2').val('');
+                $('#txtCity').val('');
+                $('#txtState').val('');
+                $('#txtZip').val('');
+
+                newUserLocationId = null;
+            }
+        }
+
+        $('#btnCreate').on('click', function () {
+            if (!newUserLocationId) {
+                alert('Cannot create new user. User location not set');
+                return;
+            }
+
+            var typeId = getUserTypeId($('#selectUserType').val());
+            //console.log(newUserLocationId);
+            //console.log(typeId);
+
+            if (!typeId || typeId <= 0) {
+                alert('Cannot create new user. User type not set');
+                return;
+            }
+            var firstname = $('#txtFirstName').val();
+            var lastname = $('#txtLastName').val();
+            var email = $('#txtEmail').val();
+            var phone = $('#txtPhone').val();
+            var username = $('#txtUsername').val();
+            var pwd = $('#txtPassword').val();
+
+            accountManager.createStaff(firstname, lastname, email, phone, username, pwd, newUserLocationId, typeId).success(function (data) {
+                var newStaff = data.data;
+                accountManager.activateStaff(newStaff.employee_id).success(function(data) {
+                    alert('Successfully created new user with id ' + newStaff.employee_id);
+                    location.reload();
+                }).fail(function() {
+                    alert("Failed to active user " + newStaff.employee_id);
+                });
+            }).fail(function() {
+                alert('Failed to create new user');
+            });
+        });
+
+        function getUserTypeId(userTypeDesc) {
+            var typeId = -1;
+
+            if (!allUserTypes) {
+                alert('User types not defined');
+                return -1;
+            }
+
+            allUserTypes.forEach(function (element, index, array) {
+                if (element.description == userTypeDesc) {
+                    typeId = element.type_id;
+                }
+            });
+
+            return typeId;
+        }
+
+    </script>
+}
+
+<h2 class="text-center no-top-margin">@ViewBag.Title</h2>
+
+<div id="mainContent" class="container-fluid contentContainer">
+    <div>
+        <b>Select a user type to create: &nbsp;&nbsp;</b>
+        <select id="selectUserType"></select>
+    </div>
+    
+    <br />
+
+    <div id="newUser" >
+        <form class="form-horizontal">
+            <div class="form-group">
+                <label for="txtFirstName" class="col-md-4 control-label">First Name</label>
+                <div class="col-md-8"><input type="text" id="txtFirstName" value="" class="form-control" /></div>
+            </div>
+
+            <div class="form-group">
+                <label for="txtLastName" class="col-md-4 control-label">Last Name</label>
+                <div class="col-md-8"><input type="text" id="txtLastName" value="" class="form-control" /></div>
+            </div>
+
+            <div class="form-group">
+                <label for="txtEmail" class="col-md-4 control-label">Email</label>
+                <div class="col-md-8"><input type="text" id="txtEmail" value="" class="form-control" /></div>
+            </div>
+
+            <div class="form-group">
+                <label for="txtPhone" class="col-md-4 control-label">Phone</label>
+                <div class="col-md-8"><input type="text" id="txtPhone" value="" class="form-control" /></div>
+            </div>
+
+            <div class="form-group">
+                <label for="txtUsername" class="col-md-4 control-label">Login Username</label>
+                <div class="col-md-8"><input type="text" id="txtUsername" value="" class="form-control" /></div>
+            </div>
+
+            <div class="form-group">
+                <label for="txtPassword" class="col-md-4 control-label">Login Password</label>
+                <div class="col-md-8"><input type="password" id="txtPassword" value="" class="form-control" /></div>
+            </div>
+
+            <div id="locationGroup">
+                @*<div id="divSelectLocation">
+                    <b>Select a location for the user:</b>
+                    <select id="selectLocation"></select>
+                    <br />
+                    <br />
+                </div>*@
+                
+                <div id="divSelectLocation">
+                    <div class="form-group">
+                        <label class="col-md-6 control-label">Select a location for the user:</label>
+                        <div class="col-md-6"><select id="selectLocation" class="form-control"></select></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="txtLocationName" class="col-md-4 control-label">Location Name</label>
+                    <div class="col-md-8"><input type="text" id="txtLocationName" value="" class="form-control" /></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="txtAddress1" class="col-md-4 control-label">Address 1</label>
+                    <div class="col-md-8"><input type="text" id="txtAddress1" value="" class="form-control" /></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="txtAddress2" class="col-md-4 control-label">Address 2</label>
+                    <div class="col-md-8"><input type="text" id="txtAddress2" value="" class="form-control" /></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="txtCity" class="col-md-4 control-label">City</label>
+                    <div class="col-md-8"><input type="text" id="txtCity" value="" class="form-control" /></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="txtState" class="col-md-4 control-label">State</label>
+                    <div class="col-md-8"><input type="text" id="txtState" value="" class="form-control" /></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="txtZip" class="col-md-4 control-label">Zip Code</label>
+                    <div class="col-md-8"><input type="text" id="txtZip" value="" class="form-control" /></div>
+                </div>
+            </div>
+
+            <button id="btnCreate" class="btn btn-primary center-block">Create</button>
+        </form>
+    </div>
+</div>

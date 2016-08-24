@@ -1,0 +1,923 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "Appointment Dashboard";
+}
+
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/2.4.0/fullcalendar.min.css">
+@*<link href="~/styles/jquery-ui.min.css" rel="stylesheet" />*@
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/start/jquery-ui.css">
+@*<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">*@
+
+@*<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/2.4.0/fullcalendar.print.css">*@
+
+
+<style type='text/css'>
+    body {
+        margin-top: 40px;
+        text-align: left;
+        font-size: 14px;
+        font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+    }
+
+    #calendar {
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .hide-content {
+        display: none;
+    }
+
+    input.error, select.error {
+        border: 1px solid #ff9999;
+        background: #ffeeee;
+    }
+
+    label.error {
+        float: right;
+        margin-left: 100px;
+        font-size: .8em;
+        color: #ff6666;
+    }
+
+    .colorBox {
+        /*float: left;*/
+        width: 15px;
+        height: 15px;
+        /*margin: 0px px 5px 5px;*/
+        border-width: 1px;
+        border-style: solid;
+        border-color: rgba(0,0,0,.2);
+    }
+
+    #patientAppointmentForm textarea {
+        margin-bottom: 5px;
+    }
+
+   
+</style>
+
+@section scripts{
+    @*<script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>*@
+    <script src="~/Scripts/jquery-ui-1.11.4.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/fullcalendar/2.4.0/fullcalendar.min.js"></script>
+    @*<script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/3.10.1/lodash.min.js"></script>*@
+    @*<script src="~/Scripts/app/appointmentPlusAPI.js"></script>*@
+
+    <script>
+        var dialog;
+        var allDoctors;
+        var allLocations;
+        var allPatients;
+        var allAppointmentStatus;
+        var currUser;
+        var editingAppointmentId;
+
+        $(function () {
+            userSession.loadUserSession();
+            userSession.enforceLogin();
+            if (!userSession.isUserLoggedIn()) return;
+
+            currUser = userSession.getUserSession();
+            displayUserProfile();
+            loadPractitioner();
+            loadPatients();
+            loadAppointmentStatus();
+            setLinkAccessPriviledge();
+
+            dialog = $('#patientAppointmentForm').dialog({
+                autoOpen: false,
+                width: 500,
+                modal: true
+            });
+
+            $('#mainContent').removeClass('hide-content');
+            setupCalender();
+            getDocAppointment();
+        });
+
+        $('#selectDoctor').on('change', getDocAppointment);
+
+        function displayUserProfile() {
+            //var currentUser = userSession.getUserSession();
+
+            if (currUser.userType.description == 'Doctor Office Staff') {
+                currUser.employee_id = currUser.userId;
+                currUser.first_name = currUser.firstname;
+                currUser.last_name = currUser.lastname;
+            }
+
+            //var msg = 'User ID: ' + currUser.userId + '\t';
+            //msg += 'First Name: ' + currUser.firstname + '\t';
+            //msg += 'Last Name: ' + currUser.lastname + '\t';
+            //msg += 'User Type: ' + currUser.userType.description + '\t';
+            //msg += 'Location: ' + currUser.location.name + '\t';
+            //$('#userProfile').text(msg);
+
+            $('#userProfileName').text(currUser.firstname + ' ' + currUser.lastname);
+            $('#userProfileUserType').text(currUser.userType.description);
+            $('#userProfileLocation').text(currUser.location.name);
+        }
+
+        function loadPractitioner() {
+
+            if (currUser.userType.description == 'Doctor Office Staff' || currUser.userType.description == 'Doctor Office Admin') {
+                $('#divSelectDoctor').hide();
+                return;
+            }
+
+            var options = {
+                type_id: 774 //Doctor Office Staff
+            }
+
+            var p1 = ap_webApi.getStaff(options);
+            var p2 = ap_webApi.getLocations();
+
+            $.when(p1, p2).done(
+                function (r1, r2) {
+                    allDoctors = r1[0].data;
+                    allLocations = r2[0].data;
+
+                    $.each(allDoctors, function (docKey, doctor) {
+                        $.each(allLocations, function (locKey, location) {
+                            if (location.location_id == doctor.c_id) {
+                                doctor.location = location;
+                                return;
+                            }
+                        });
+                    });
+
+                    var selectDoctor = $('#selectDoctor');
+                    selectDoctor.append($("<option />").val('').text(''));
+                    $.each(allDoctors, function (key, doctor) {
+
+                        var name = doctor.screen_name.split('|');
+                        if (name.length == 2) {
+                            var firstname = name[0];
+                            var lastname = name[1];
+                        }
+
+                        var textVal = firstname + ' ' + lastname + ' at ' + doctor.location.name;
+                        selectDoctor.append($("<option />").val(doctor.employee_id).text(textVal));
+                    });
+                }
+            );
+        }
+
+        function loadPatients() {
+            if (currUser.userType.description != 'Doctor Office Staff' && currUser.userType.description != 'Facility Staff') {
+                return;
+            }
+
+            patientManager.loadData().done(function (patients) {
+                console.log(patients);
+                allPatients = patients;
+
+                var selectPatient = $('#appointmentPatient');
+                selectPatient.append($("<option />").val('').text(''));
+                $.each(allPatients, function (key, patient) {
+                    var textVal = patient.lastName + ', ' + patient.firstName + ' ' + patient.DOB;
+                    selectPatient.append($("<option />").val(patient.patientId).text(textVal));
+                });
+            }).fail(function (errMsg) {
+                alert(errMsg);
+            });
+        }
+
+        function loadAppointmentStatus() {
+            allAppointmentStatus = [
+                { id: 247, text: 'Scheduled' },
+                { id: 248, text: 'Confirmed' },
+                { id: 249, text: 'Complete' },
+                { id: 250, text: 'Rescheduled' },
+                { id: 251, text: 'Cancelled' },
+                { id: 252, text: 'No Show' }
+            ];
+
+            var selectAppointmentStatus = $('#appointmentStatus');
+            $.each(allAppointmentStatus, function (key, status) {
+                selectAppointmentStatus.append($("<option />").val(status.id).text(status.text));
+            });
+        }
+
+        function mapStatusIdToText(statusId) {
+            var text = undefined;
+            //might need to convert statusId to int
+            switch (statusId) {
+                case 247:
+                    text = 'Scheduled';
+                    break;
+                case 248:
+                    text = 'Confirmed';
+                    break;
+                case 249:
+                    text = 'Complete';
+                    break;
+                case 250:
+                    text = 'Rescheduled';
+                    break;
+                case 251:
+                    text = 'Cancelled';
+                    break;
+                case 252:
+                    text = 'No Show';
+                    break;
+                default:
+
+            }
+            return text;
+        }
+
+        function mapStatusTextToId(statusText) {
+            var statusId = undefined;
+            switch (statusText) {
+                case 'Scheduled':
+                    statusId = 247;
+                    break;
+                case 'Confirmed':
+                    statusId = 248;
+                    break;
+                case 'Complete':
+                    statusId = 249;
+                    break;
+                case 'Rescheduled':
+                    statusId = 250;
+                    break;
+                case 'Cancelled':
+                    statusId = 251;
+                    break;
+                case 'No Show':
+                    statusId = 252;
+                    break;
+                default:
+            }
+            return statusId;
+        }
+
+        function setLinkAccessPriviledge() {
+            var linkDiv = $('#divLinkApptReport');
+            if (currUser.userType.description == 'Doctor Office Staff') {
+                linkDiv.show();
+            } else {
+                linkDiv.hide();
+            }
+        }
+
+        function setupCalender() {
+            var date = moment(new Date());
+            var aWeekFromToday = date.add(7, 'days');
+            var viewDate = moment.utc(aWeekFromToday).format('YYYY-MM-DD');
+
+            $('#calendar').fullCalendar({
+                customButtons: {
+                    myCustomButton: {
+                        text: 'New Appoinment',
+                        click: newApointmentEventHandler
+                    }
+                },
+                header: {
+                    left: 'prev,next today myCustomButton',
+                    center: 'title',
+                    right: 'month,agendaWeek,agendaDay'
+                },
+                defaultDate: viewDate, //'2014-06-12',
+                defaultView: 'agendaWeek',
+                editable: false,
+                eventClick: editAppointmentEventHandler
+            });
+        }
+
+        function getDocAppointment() {
+            var currDoc = getCurrentDoctor();
+            if (currDoc) {
+                getAppoinments(currDoc.employee_id);
+            }
+        };
+
+        function getCurrentDoctor() {
+            //var currUser = userSession.getUserSession();
+            if (currUser.userType.description == 'Doctor Office Staff') {
+                return currUser;
+            } else {
+                var doctorId = $('#selectDoctor').val();
+                return getDoctorById(doctorId);
+            }
+        }
+
+        function getDoctorById(doctorId) {
+            if (!allDoctors) return;
+            var doctors = allDoctors.filter(function (element) {
+                return element.employee_id == doctorId;
+            });
+
+            if (doctors.length > 0)
+                return doctors[0];
+        }
+
+        function suggestAppointmentSchedule() {
+            var currDoc = getCurrentDoctor();
+            if (!currDoc) {
+                alert('Unable to view/make appointments, please select a practitioner');
+                return false;
+            }
+
+            //$('#appointmentTitle').val('*** create appointment'); //To remove
+
+            //Suggest an appointment a week from today
+            var date = moment(new Date());
+            var aWeekFromToday = date.add(7, 'days');
+            var viewDate = moment.utc(aWeekFromToday).format('YYYY-MM-DD');
+
+            $('#appointmentDate').val(viewDate);
+            //$('#appointmentStartTime').val('08:00');
+            //$('#appointmentEndTime').val('09:00');
+
+            $('#appointmentDoctor').val(currDoc.first_name + ' ' + currDoc.last_name);
+            $('#appointmentLocation').val(currDoc.location.name);
+
+            return true;
+        }
+
+        function newApointmentEventHandler() {
+            resetAppointmentForm();
+            $('#divAppointmentStatus').hide();
+
+            dialog.dialog({
+                buttons: {
+                    "Create": createAppointment,
+                    Cancel: function () {
+                        dialog.dialog("close");
+                    }
+                }
+            });
+            if (suggestAppointmentSchedule()) {
+                dialog.dialog('open');
+            }
+        }
+
+        function createAppointment() {
+            if (validateAppointment(true) == false) return;
+
+            var title = $('#appointmentTitle').val();
+            var date = $('#appointmentDate').val();
+            var startTime = $('#appointmentStartTime').val();
+            var endTime = $('#appointmentEndTime').val();
+            var patientId = $('#appointmentPatient').val();
+
+            var currDoc = getCurrentDoctor();
+            var doctorId = currDoc.employee_id; //$('#appointmentDoctor').val();
+            var locationId = currDoc.location.location_id; //$('#appointmentLocation').val();
+            //var serviceId = $('#appointmentService').val();
+
+            //var d = date.getDate();
+            //var m = date.getMonth();
+            //var y = date.getFullYear();
+            var apptDateOption = moment(date).format('YYYYMMDD');
+            //var apDate = date.getFullYear() + date.getMonth() + date.getDate();
+            //console.log(apptDateOption);
+
+            var options = {
+                employee_notes: title,
+                customer_id: patientId,
+                employee_id: doctorId,
+                c_id: locationId,
+                //service_id: serviceId,
+                date: apptDateOption,
+                start_time: toMinutes(startTime),
+                end_time: toMinutes(endTime),
+                override: true //force to create apointment
+            };
+
+            // Save appointment
+            ap_webApi.createAppointment(options).success(function (data) {
+                var serverAppt = data.data;
+                var clientAppt = mapApptServerToClient(serverAppt);
+
+                //Add to calendar
+                var calEvent = mapClientApptToCalendarEvent(clientAppt);
+                $('#calendar').fullCalendar('addEventSource', [calEvent]);
+                //var calStartTime = date + 'T' + startTime;
+                //var calEndTime = date + 'T' + endTime;
+                //$('#calendar').fullCalendar('addEventSource', [
+                //    {
+                //        title: title,
+                //        //start: '2015-08-24T10:30:00',
+                //        //end: '2015-08-24T12:30:00'
+                //        start: calStartTime,
+                //        end: calEndTime
+                //    }
+                //]);
+
+                window.alert("New appointment [" + clientAppt.title + "] created successfully");
+                dialog.dialog("close");
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus);
+            });
+        }
+
+        function getAppoinments(doctorId) {
+            if (!doctorId) {
+                alert('Doctor ID not set, unable to display calendar');
+                return;
+            }
+
+            var options = {
+                //start_date: '20150101',
+                //end_date: '20151231',
+                staff: doctorId,
+                status: '247,248,249,250,252'
+            };
+
+            ap_webApi.getAppointments(options).success(function (data) {
+                var appts = data.data;
+                var events = [];
+                _.map(appts, function (serverAppt) {
+                    //var appId = appt.appt_id;
+                    //var title = appt.employee_notes;
+                    //var date = appt.date;
+                    //var startTime = appt.start_time;
+                    //var endTime = appt.end_time;
+                    var clientAppt = mapApptServerToClient(serverAppt);
+
+                    //var eventDate = moment(clientAppt.date, 'YYYYMMDD').format('YYYY-MM-DD');
+                    //var calStartTime = eventDate + 'T' + toTime(clientAppt.startTime);
+                    //var calEndTime = eventDate + 'T' + toTime(clientAppt.endTime);
+
+                    //var calEvent = {
+                    //    title: title,
+                    //    start: calStartTime,
+                    //    end: calEndTime
+                    //};
+                    var calEvent = mapClientApptToCalendarEvent(clientAppt);
+                    events.push(calEvent);
+                });
+
+                console.log(events);
+                $('#calendar').fullCalendar('removeEvents');
+                $('#calendar').fullCalendar('addEventSource', events);
+
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus);
+            });
+        }
+
+        function mapApptServerToClient(serverAppt) {
+            if (!serverAppt) {
+                return;
+            }
+
+            var clientAppt = {
+                apptId: serverAppt.appt_id,
+                title: serverAppt.employee_notes,
+                date: serverAppt.date,
+                startTime: serverAppt.start_time,
+                endTime: serverAppt.end_time,
+                locationId: serverAppt.c_id,
+                patientId: serverAppt.customer_id,
+                doctorId: serverAppt.employee_id,
+                statusId: serverAppt.status_id
+            }
+            return clientAppt;
+        }
+
+        //Scheduled: 247
+        //Confirmed: 248
+        //Complete: 249
+        //Rescheduled: 250
+        //No Show: 252
+
+        function mapClientApptToCalendarEvent(clientAppt) {
+            if (!clientAppt) return;
+
+            var eventDate = moment(clientAppt.date, 'YYYYMMDD').format('YYYY-MM-DD');
+            var calStartTime = eventDate + 'T' + toTime(clientAppt.startTime);
+            var calEndTime = eventDate + 'T' + toTime(clientAppt.endTime);
+
+            var color = 'DodgerBlue'; //scheduled 247
+            if (clientAppt.statusId == 248) { //Confirmed
+                color = 'green';
+            }
+            else if (clientAppt.statusId == 249) { //Complete
+                color = 'purple';
+            }
+            else if (clientAppt.statusId == 250) { //Rescheduled
+                color = 'orange';
+            }
+            else if (clientAppt.statusId == 252) { //No Show
+                color = 'red';
+            }
+
+            var calEvent = {
+                id: clientAppt.apptId,
+                title: clientAppt.title,
+                start: calStartTime,
+                end: calEndTime,
+                source: clientAppt,
+                color: color
+            };
+
+            return calEvent;
+        }
+
+        function toMinutes(time) {
+            //time in format '09:00'
+            var parts = time.split(':');
+            var result = parseInt(parts[0]) * 60 + parseInt(parts[1]);
+            return result;
+        }
+
+        function toTime(mins) {
+            var h = parseInt(mins / 60);
+            var m = mins % 60;
+            var result = ("0" + h).slice(-2) + ':' + ("0" + m).slice(-2) + ':00';
+            return result;
+        }
+
+        function editAppointmentEventHandler(calEvent, jsEvent, view) {
+            console.log(calEvent);
+
+            editingAppointmentId = calEvent.id;
+            var appt;
+            var appts = calEvent.source.origArray;
+            if (appts.length > 0) {
+                appts.forEach(function (element) {
+                    if (element.id == calEvent.id) {
+                        appt = element.source;
+                    }
+                });
+            }
+
+            console.log(appt);
+
+            resetAppointmentForm();
+            $('#appointmentPatient').attr('disabled', true);
+            $('#appointmentPatient').hide();
+
+            $('#appointmentTitle').val(appt.title);
+
+            var eventDate = moment(appt.date, 'YYYYMMDD').format('YYYY-MM-DD');
+            var eventStartTime = toTime(appt.startTime);
+            var eventEndTime = toTime(appt.endTime);
+
+            $('#appointmentDate').val(eventDate);
+            $('#appointmentStartTime').val(eventStartTime);
+            $('#appointmentEndTime').val(eventEndTime);
+            $('#appointmentStatus').val(appt.statusId);
+            $('#appointmentPatient').val(appt.patientId);
+
+            var doc = getCurrentDoctor();
+            $('#appointmentDoctor').val(doc.first_name + ' ' + doc.last_name);
+            $('#appointmentLocation').val(doc.location.name);
+            showPatientDetail(appt.patientId);
+
+            dialog.dialog({
+                buttons: {
+                    "Update": updateAppointment,
+                    "Delete": deleteAppointment,
+                    Cancel: function () {
+                        dialog.dialog("close");
+                    }
+                }
+            });
+            dialog.dialog('open');
+        }
+
+        function validateAppointment(checkPatientId) {
+            var title = $('#appointmentTitle').val();
+            var date = $('#appointmentDate').val();
+            var startTime = $('#appointmentStartTime').val();
+            var endTime = $('#appointmentEndTime').val();
+            var patientId = $('#appointmentPatient').val();
+
+            if (!title || title.trim() == '') {
+                alert('Please fill in appointment title');
+                return false;
+            }
+
+            if (!date) {
+                alert('Please fill in appointment date');
+                return false;
+            }
+
+            if (!startTime) {
+                alert('Please fill in appointment start time');
+                return false;
+            }
+
+            if (!endTime) {
+                alert('Please fill in appointment end  time');
+                return false;
+            }
+
+            if (checkPatientId && !patientId) {
+                alert('Please select a patient');
+                return false;
+            }
+
+            return true;
+        }
+
+        function updateAppointment() {
+            if (validateAppointment(false) == false) return;
+
+            var title = $('#appointmentTitle').val();
+            var date = $('#appointmentDate').val();
+            var startTime = $('#appointmentStartTime').val();
+            var endTime = $('#appointmentEndTime').val();
+            var statusId = $('#appointmentStatus').val();
+
+            var apptDateOption = moment(date).format('YYYYMMDD');
+
+            var options = {
+                appt_id: editingAppointmentId,
+                employee_notes: title,
+                date: apptDateOption,
+                start_time: toMinutes(startTime),
+                end_time: toMinutes(endTime),
+                status_id: statusId,
+                override: true //force to create apointment
+            };
+
+            // Save appointment
+            ap_webApi.updateAppointment(options).success(function (data) {
+                if (data.result == 'fail') {
+                    window.alert(data.errors[0]);
+                    dialog.dialog("close");
+                } else {
+                    //console.log(data);
+
+                    var serverAppt = data.data;
+                    var clientAppt = mapApptServerToClient(serverAppt);
+
+                    //Add to calendar
+                    var calEvent = mapClientApptToCalendarEvent(clientAppt);
+                    $('#calendar').fullCalendar('removeEvents', editingAppointmentId);
+                    //console.log(clientAppt);
+                    //console.log(calEvent);
+                    $('#calendar').fullCalendar('addEventSource', [calEvent]);
+
+                    window.alert("Appointment [" + clientAppt.title + "] updated successfully");
+                    dialog.dialog("close");
+                }
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus);
+            });
+        }
+
+        function deleteAppointment() {
+            //Just cancel appointment
+            //alert('Delete appoinment');
+            if (!editingAppointmentId) return;
+
+            var r = confirm('Are you sure you want to delete this appointment?');
+            if (r == true) { //ok
+                ap_webApi.cancelAppointment(editingAppointmentId).success(function (data) {
+                    var appts = data.data;
+                    var events = [];
+                    _.map(appts, function (serverAppt) {
+                        var clientAppt = mapApptServerToClient(serverAppt);
+                        var calEvent = mapClientApptToCalendarEvent(clientAppt);
+                        events.push(calEvent);
+                    });
+
+                    $('#calendar').fullCalendar('removeEvents', editingAppointmentId);
+                    dialog.dialog("close");
+                    window.alert('Delete appointment successful');
+                }).fail(function (jqXHR, textStatus, errorThrown) {
+                    window.alert(textStatus);
+                });
+            }
+        }
+
+        function resetAppointmentForm() {
+            $('#appointmentTitle').val('');
+            $('#appointmentDate').val('');
+            $('#appointmentStartTime').val('');
+            $('#appointmentEndTime').val('');
+            $('#appointmentPatient').val('');
+            $('#appointmentDoctor').val('');
+            $('#appointmentLocation').val('');
+            clearPatientDetail();
+
+            $('#appointmentPatient').show();
+            $('#divAppointmentStatus').show();
+            $('#appointmentPatient').attr('disabled', false);
+            $('#appointmentLocation').attr('readonly', true);
+            $('#appointmentDoctor').attr('readonly', true);
+        }
+
+        function showPatientDetail(patientId) {
+            if (!patientId || patientId == '') {
+                clearPatientDetail();
+                return;
+            }
+
+            //if (!allPatients) return;
+
+            //var filterResult = allPatients.filter(function (element) {
+            //    return element.patientId == patientId;
+            //});
+            //var patient = filterResult[0];
+
+            patientManager.getPatientById(patientId).done(function (patient) {
+                $('#spanPatientDetailName').text(patient.lastName + ', ' + patient.firstName);
+                $('#spanPatientDetailDOB').text(patient.DOB);
+                $('#spanPatientDetailEmail').text(patient.email);
+                $('#spanPatientDetailPhone').text(patient.phone);
+
+                $('#spanPatientDetailFin').text(patient.fin);
+                var tcEligibleText = patient.tcEligible ? 'Yes' : 'No';
+                $('#spanPatientDetailTCEligible').text(tcEligibleText);
+                var insuranceText = patient.insurance ? 'Yes' : 'No';
+                $('#spanPatientDetailInsurance').text(insuranceText);
+                $('#spanPatientDetailTypeINS').text(patient.typeIns);
+            }).fail(function(err) {
+                alert(err);
+            });
+        }
+
+        function clearPatientDetail() {
+            $('#spanPatientDetailName').text('');
+            $('#spanPatientDetailDOB').text('');
+            $('#spanPatientDetailEmail').text('');
+            $('#spanPatientDetailPhone').text('');
+
+            $('#spanPatientDetailFin').text('');
+            $('#spanPatientDetailTCEligible').text('');
+            $('#spanPatientDetailInsurance').text('');
+            $('#spanPatientDetailTypeINS').text('');
+        }
+
+        $('#appointmentPatient').on('change', function () {
+            var patientId = this.value;
+            showPatientDetail(patientId);
+        });
+
+
+    </script>
+}
+
+@*<button id="testModal">Test</button>*@
+
+<div id='patientAppointmentForm' title="Patient Appoinment" style="display:none">
+    <form class="form-horizontal">
+        <div class="form-group">
+            <label for="appointmentTitle" class="col-md-3 control-label">Title</label>
+            <div class="col-md-9">
+                @*<input id="appointmentTitle" type="text" value="" class="form-control" />*@
+                <textarea id="appointmentTitle" class="form-control" rows="3"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="appointmentDate" class="col-md-3 control-label">Date</label>
+            <div class="col-md-6">
+                <input id="appointmentDate" type="date" value="" class="form-control" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="appointmentStartTime" class="col-md-3 control-label">Start Time</label>
+            <div class="col-md-6">
+                <input id="appointmentStartTime" type="time" value="" class="form-control" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="appointmentEndTime" class="col-md-3 control-label">End Time</label>
+            <div class="col-md-6">
+                <input id="appointmentEndTime" type="time" value="" class="form-control" />
+            </div>
+        </div>
+
+        <div id="divAppointmentStatus" class="form-group">
+            <label for="appointmentStatus" class="col-md-3 control-label">Status</label>
+            <div class="col-md-6">
+                <select id="appointmentStatus" class="form-control"></select>
+            </div>
+        </div>
+
+        <h3>Appointment Detail</h3>
+        @*<label for="appointmentPatient">Customer</label>
+            <input id="appointmentPatient" type="text" value="2978" width="20" />*@
+
+        <div class="form-group">
+            <label for="appointmentPatient" class="col-md-3 control-label">Patient</label>
+            <div class="col-md-9">
+                <select id="appointmentPatient" class="form-control"></select>
+            </div>
+        </div>
+
+        <div id="divPatientDetail" class="well">
+            <b>Name:</b> <span id="spanPatientDetailName"></span>
+            <br />
+            <b>DOB:</b> <span id="spanPatientDetailDOB"></span>
+            <br />
+            <b>Email:</b> <span id="spanPatientDetailEmail"></span>&nbsp;&nbsp;
+            <b>Phone:</b> <span id="spanPatientDetailPhone"></span>
+            <br />
+            <b>FIN:</b> <span id="spanPatientDetailFin"></span>
+            <br />
+            <b>Transitional Care Eligible:</b> <span id="spanPatientDetailTCEligible"></span>
+            <br />
+
+            <b>Insurance:</b> <span id="spanPatientDetailInsurance"></span>
+            <br />
+
+            <b>Type INS:</b> <span id="spanPatientDetailTypeINS"></span>
+            <br />
+        </div>
+        @*<input id="appointmentPatient" type="text" width="20" />*@
+
+        <div class="form-group">
+            <label for="appointmentLocation" class="col-md-3 control-label">Location</label>
+            <div class="col-md-9">
+                <input id="appointmentLocation" type="text" width="20" readonly="true" class="form-control" />
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="appointmentDoctor" class="col-md-3 control-label">Doctor</label>
+            <div class="col-md-9">
+                <input id="appointmentDoctor" type="text" width="20" readonly="true" class="form-control" />
+            </div>
+        </div>
+
+        @*<label for="appointmentService">Service</label>
+            <input id="appointmentService" type="text" value="85" width="20" />*@
+    </form>
+
+</div>
+
+<h2 class="text-center no-top-margin">@ViewBag.Title</h2>
+
+<div id="mainContent" class="hide-content container-fluid">
+    @*<h3 class="left">@ViewBag.Title</h3>*@
+
+    <div class="row">
+        <div class="col-md-2">
+            <div id="divLinkApptReport">
+                <a href="/Appointments/Appointments/Report">Appointment Report</a>
+            </div>
+            <div>
+                <a href="/Account/PatientManagement">Patient Management</a>
+            </div>
+
+            <br />
+            <div>
+                <h3>Your Profile</h3>
+
+                <div id="divPatientDetail" class="well">
+                    <b>Name:</b> <span id="userProfileName"></span>
+                    <br />
+                    <b>Role:</b> <span id="userProfileUserType"></span>
+                    <br />
+                    <b>Location:</b> <span id="userProfileLocation"></span>
+                    <br />
+                </div>
+            </div>
+
+            <br />
+
+            <div>
+                <h3>Appointment Status</h3>
+
+                <div class="well">
+                    <div class="row">
+                        <b class="col-md-7">Scheduled</b>
+                        <div class="colorBox col-md-3" style="background-color:DodgerBlue;"></div>
+                    </div>
+                    <div class="row">
+                        <b class="col-md-7">Confirmed</b>
+                        <div class="colorBox col-md-3" style="background-color:green;"></div>
+                    </div>
+                    <div class="row">
+                        <b class="col-md-7">Complete</b>
+                        <div class="colorBox col-md-3" style="background-color:purple;"></div>
+                    </div>
+                    <div class="row">
+                        <b class="col-md-7">Rescheduled</b>
+                        <div class="colorBox col-md-3" style="background-color:orange;"></div>
+                    </div>
+                    <div class="row">
+                        <b class="col-md-7">No Show</b>
+                        <div class="colorBox col-md-3" style="background-color:red;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-10">
+            <div id="divSelectDoctor">
+                <b style="color:#34495e">Find Practitioner: &nbsp;</b>
+                <select id="selectDoctor"></select>
+            </div>
+            <br />
+
+            <div id='calendar'></div>
+        </div>
+    </div>
+</div>
+

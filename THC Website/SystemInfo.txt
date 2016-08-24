@@ -1,0 +1,25 @@
+﻿-----------------------------------------
+Apointment Plus Web API
+site ID :  appointplus395/42
+API Key   0183c59972626a190a39190fd900499ad3664d71
+Testing Tool: https://ws.appointment-plus.com/tester/index.php
+Usage example: https://ws1.appointment-plus.com/Locations/GetLocations
+https://ws2.appointment-plus.com/Locations/GetLocations
+
+
+System Users:
+system admin: superuser superuser123 1438
+Facility admin: shady groove 1466
+Facility staff: john smith 1467
+Doctor office admin: abc cardio 1470
+Doctor office staff: phil philson 1471
+
+Appointment Status:
+Scheduled: 247
+Confirmed: 248
+Complete: 249
+Rescheduled: 250
+Cancelled: 251
+No Show: 252
+
+247,248,249,250,252

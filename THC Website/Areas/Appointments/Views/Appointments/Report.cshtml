@@ -1,0 +1,248 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "Appointment Report";
+}
+
+<style>
+    .contentContainer {
+        position: relative;
+        width: 600px;
+        margin: 5px auto;
+        /*padding-top: 30px;*/
+        /*background-color: #F7F9FA;*/
+        -webkit-border-radius: 5px;
+        -moz-border-radius: 5px;
+        -khtml-border-radius: 5px;
+        border-radius: 5px;
+    }
+
+/*.form-control {
+        width: 70%;
+    }*/
+</style>
+
+@section scripts{
+    @*<script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>*@
+    <script src="~/Scripts/jquery-ui-1.11.4.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.js"></script>
+
+    <script>
+        var currUser;
+        var minDate = '2000-01-01';
+        var maxDate = '2050-01-01';
+
+        $(function () {
+            userSession.loadUserSession();
+            userSession.enforceLogin();
+            if (!userSession.isUserLoggedIn()) return;
+
+            currUser = userSession.getUserSession();
+
+        });
+
+        //$('#btnGenerate').on('click', function () {
+        //    var startDate = minDate;
+        //    var endDate = maxDate;
+
+        //    if ($('#startDate').val()) {
+        //        startDate = $('#startDate').val();
+        //    }
+
+        //    if ($('#endDate').val()) {
+        //        endDate = $('#endDate').val();
+        //    }
+
+          
+        //    var apptStartDateOption = moment(startDate).format('YYYYMMDD');
+        //    var apptEndDateOption = moment(endDate).format('YYYYMMDD');
+
+        //    var optionsTotal = {
+        //        start_date: apptStartDateOption,
+        //        end_date: apptEndDateOption,
+        //        staff: currUser.userId,
+        //        status: '247,248,249,250,252'
+        //    };
+
+        //    var optionsNoShow = {
+        //        start_date: apptStartDateOption,
+        //        end_date: apptEndDateOption,
+        //        staff: currUser.userId,
+        //        status: 252
+        //    };
+
+        //    $('#spanRange').text("From " + moment(startDate).format('MM/DD/YYYY') + " to " + moment(endDate).format('MM/DD/YYYY'));
+        //    $('#spanDoctor').text(currUser.firstname + ' ' + currUser.lastname);
+        //    var pTotal = ap_webApi.getAppointments(optionsTotal);
+        //    var pNoShow = ap_webApi.getAppointments(optionsNoShow);
+
+        //    $.when(pTotal, pNoShow).done(
+        //       function (rTotal, rNoShow) {
+
+        //           var totalBookings = rTotal[0].count;
+        //           var totalNoShows = rNoShow[0].count;
+
+        //           $('#spanTotalBookings').text(totalBookings);
+        //           $('#cellTotalBookings').html(totalBookings);
+
+        //           $('#spanNoShows').text(totalNoShows);
+        //           $('#cellNoShows').html(totalNoShows);
+        //       }
+        //   ).fail(function (jqXHR, textStatus, errorThrown) {
+        //       console.log(textStatus);
+        //    });
+
+        //    return false;
+        //});
+
+        $('#btnGenerate').on('click', function () {
+            var startDate = minDate;
+            var endDate = maxDate;
+
+            if ($('#startDate').val()) {
+                startDate = $('#startDate').val();
+            }
+
+            if ($('#endDate').val()) {
+                endDate = $('#endDate').val();
+            }
+
+            var apptStartDateOption = moment(startDate).format('YYYYMMDD');
+            var apptEndDateOption = moment(endDate).format('YYYYMMDD');
+
+            var optionsTotal = {
+                start_date: apptStartDateOption,
+                end_date: apptEndDateOption,
+                staff: currUser.userId,
+                status: '247,248,249,250,252'
+            };
+
+            $('#spanRange').text("From " + moment(startDate).format('MM/DD/YYYY') + " to " + moment(endDate).format('MM/DD/YYYY'));
+            $('#spanDoctor').text(currUser.firstname + ' ' + currUser.lastname);
+
+            ap_webApi.getAppointments(optionsTotal).success(function (data) {
+                var appts = data.data;
+
+                var totalBookings = appts.length;
+                var numScheduled = 0;
+                var numConfirmed = 0;
+                var numComplete = 0;
+                var numRescheduled = 0;
+                var numNoShow = 0;
+
+                appts.forEach(function (appt) {
+                    var statusId = appt.status_id;
+                    switch (statusId) {
+                        case '247':
+                            numScheduled++;
+                            break;
+                        case '248':
+                            numConfirmed++;
+                            break;
+                        case '249':
+                            numComplete++;
+                            break;
+                        case '250':
+                            numRescheduled++;
+                            break;
+                        case '252':
+                            numNoShow++;
+                            break;
+                        default:
+                            break;
+                    }
+                    console.log(numNoShow);
+                    $('#cellTotalBookings').html(totalBookings);
+                    $('#cellScheduled').html(numScheduled);
+                    $('#cellConfirmed').html(numConfirmed);
+                    $('#cellComplete').html(numComplete);
+                    $('#cellRescheduled').html(numRescheduled);
+                    $('#cellNoShows').html(numNoShow);
+
+                });
+            }).fail(function (jqXHR, textStatus, errorThrown) {
+                console.log(textStatus);
+            });
+
+            return false;
+        });
+
+
+    </script>
+}
+
+<h2 class="text-center no-top-margin">@ViewBag.Title</h2>
+<div id="mainContent" class="container-fluid contentContainer">
+    <div class="">
+        <form class="form-horizontal">
+            <h3>Report Range</h3>
+
+            <div class="form-group">
+                <label for="startDate" class="col-md-3 control-label">Start Date</label>
+                <div class="col-md-7"><input id="startDate" type="date" value="" class="form-control" /></div>
+            </div>
+
+            <div class="form-group">
+                <label for="endDate" class="col-md-3 control-label">End Date</label>
+                <div class="col-md-7"><input id="endDate" type="date" value="" class="form-control" /></div>
+            </div>
+            <button id="btnGenerate" class="center-block btn btn-default">Generate</button>
+        </form>
+    </div>
+
+    <br />
+    <div id="divReport">
+        <h3>Report</h3>
+
+        <span>Doctor: </span>
+        <span id="spanDoctor"></span>
+        <br />
+
+        <span>Report Range: </span>
+        <span id="spanRange"></span>
+        <br />
+        <br />
+
+        @*<span>Number of Appointment Bookings:</span>
+        <span id="spanTotalBookings"></span>
+        <br />
+
+        <span>Number of No Shows:</span>
+        <span id="spanNoShows"></span>*@
+        
+        <table class="table table-hover table-bordered">
+            <thead>
+                <tr>
+                    <th>Categories</th>
+                    <th>Counts</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Total Bookings</td>
+                    <td id="cellTotalBookings"></td>
+                </tr>
+                <tr>
+                    <td>Scheduled</td>
+                    <td id="cellScheduled"></td>
+                </tr>
+                <tr>
+                    <td>Confirmed</td>
+                    <td id="cellConfirmed"></td>
+                </tr>
+                <tr>
+                    <td>Complete</td>
+                    <td id="cellComplete"></td>
+                </tr>
+                <tr>
+                    <td>Rescheduled</td>
+                    <td id="cellRescheduled"></td>
+                </tr>
+                <tr>
+                    <td>No Shows</td>
+                    <td id="cellNoShows"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>

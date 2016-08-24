@@ -1,0 +1,127 @@
+﻿TO DOS:
+
+===============================================================
+Patrick's revision requirements
+
+2.	Let’s add a contact page. The email contact that the text box will forward mailto is admin@smarthc.com, I will provide the 1800..number soon, 
+	and the address is 491 Hungerford drive suite 119-161, Rockville MD 20850.
+
+4.	Moving on to application. Please change appointments to Services on menu tab. Under the services tab let’s have 2 options hospital 1st and doctor 2nd 
+	which will direct users to the Login page. Please use format on page 2 of the ppt for design of login page. On the login page please add a sign up button. 
+	The sign up button will take you to a contact form page to weed out spam please add a captcha box before submit button. The title will be" Please fill out 
+	this form and a representative will contact you shortly" the form will request for the following information: First Name, Last Name, Email, Phone number, 
+	Organizations name. The only optional fields are phone and email. The submit button will the send the information to sales@smarthealthcaresystems.com or 
+	sales@smarthc.com. After submitting the form we will display a thank you message, "Thank you. A smarthealthcaresystems representative will contact you shortly." 
+5.	Logging in as a facility admin shady grove hospital. Please display logged on user at top right corner. Upon clicking on user will send to user settings 
+	(discussed later in email). Please remove patient management on the left (the hospital will not do any patient management). Please remove new appointment. 
+	Please remove appointment status text box.(replacement format below) 
+6.	Upon choosing a practitioner Phil Philson. Only populate calendar with the availability that he set on his side, everything else should be greyed out. 
+	Please set the color of the available date tile to green. Please see calendar on slide 5 of mock up. If doctor has more than one location create a new option 
+	drop down button and name it "Choose location". This will populated with the doctor’s office locations. 
+7.	Upon clicking on this the available date tile please set a popup to appear set the form table as seen on the ppt page 5 the design doesn’t have to be similar 
+	in this case and the calendar on the left side can be skipped. The mandatory fields are firs and last name, DOB and phone number, Transitional care eligible 
+	and insurance (Insurance field will be a drop down populated list), email and FIN (FIN will not be visible to the doctor) will be optional. Please add a new 
+	field discharge doctor with a drop down populated list that will have doctors in that facility include a "other" option in drop down selection which if selected 
+	opens up a text box for user to fill in new doctors name. To submit form please have a schedule button, a reset button, and a cancel button at the bottom. 
+	Upon selecting schedule please prompt a warning "Are you sure you are ready to schedule? No changes can be made after scheduling."
+8.	Once form is submitted please show patients first and last name on the tile and change color of tile to red. The submission is sent over to the doctor’s office. 
+	Clicking on the tile will show a popup of the information filled up with patient’s information but no changes can be made (for now at least). 
+9.	While logged on under services tab please remove patient management, change system user management to "settings" Under settings we will have two criteria’s; 
+	•	The user who create sign ups up for the account will be admin user and will have the following setting options;  create user (only the facility staff option) 
+		which will take him to the create user page as you have it now, change password, change contact info (Phone, email...), Organization info. 
+	•	The users created by admin will be regular users their setting will only be, change password and change contact info (phone and email) only organizational 
+		emails will be permitted e.g...@shadygrovehospital.org. We will obviously have a save button and if possible have a button to navigate back to dashboard. 
+		Please add reports which will navigate to the appointment report page as you currently have it. We will discuss reports page later. 
+10.	Logging in as doctor add logged on user to top right corner (same functions as hospital).
+11.	Remove appointment report from services drop down menu.
+12.	Remove appointment report and patient management from left side of page
+13.	On the appointment status legend remove all but confirmed, rescheduled and No show
+14.	Add settings on service menu tab and give it same functionality as hospital users.
+15.	Above calendar on the left side replace today button with “fill in availability” and a “Edit availability” button. 
+	•	Fill in availability will allow the doctor user to fill in available dates of choice that will be display on the hospital side. This button will take them to
+		the same calendar but with options to select a tile. Once a tile is selected a pop screen appears prompting for “Select time availability”. This will be a 
+		scroll down time availability list from 12AM to 12AM. Once date and times are selected they will be display on main calendar on an un-editable pop-up window 
+		showing available times as will show on the doctor’s side. The only option allowed on this window is reschedule if the hospital has already scheduled a patient 
+		on that date. On reschedule allow edits on time and date only. After reschedule button is hit prompt the following warning, “Are you sure you want to 
+		reschedule this appointment?” ‘Yes’, ‘No’
+	•	Edit availability will allow the doctor to go back to the editable calendar and edit availability dates only if the hospital has not scheduled any patients 
+		on that tile. Otherwise they will have to use the reschedule option. 
+	•	On the new appointment pop-up window use same format as “add” pop-up window (in the patient management section) except Remove FIN and Transitional Care Eligible. 
+		Change Type INS to “Insurance Company” Under insurance remove check box and add yes or no radio buttons. If ‘no’ then ‘Insurance company disappears, If ‘Yes’ then 
+		insurance company is selected from drop down and add the scheduling options under the new appointment pop-up window (Date, Time options). Change “Create 
+		to “Schedule” add a cancel option button. Prompt warning after scheduling button is hit prompt the warning "Are you sure you are ready to schedule? 
+	•	Save the patient info to patient management after scheduling new appointment.
+16.	Refer to color scheme for tiles on ppt page 7. Ignore everything else for now.
+17.	Under patient management remove FIN field or replace with Discharge doctor field. Please redesign the search box it’s confusing. Currently appears as a row 
+	under patient management.
+18.	Remove “add” button. Add edit option (small wrench icon) on the individual patient row next to trash can this brings up the edit pop-up window. Change add 
+	client to “Edit patient”. 
+19.	All patients scheduled from hospital will automatically be added to patient management only their Email, phone and insurance will be editable.
+20.	Patients added by Doctors office can be fully edited and also scheduled on dates and times not conflicting with hospital scheduling.    
+
+===============================================================
+Done:
+1.	Starting with the homepage lets change the first slide font color to black, the one that has integrated solutions on it.
+3.	Please make the slides automatically continue flipping on the homepage.
+
+===============================================================
+
+DONE:
+- Login Page, login/logout
+- User session 
+- user dash board - apointments with basic user info
+- register system users - super user, hospital admin, hospital staff, doctor office admin, doctor office staff
+- when register doctor admin/staff, supply locations
+- doctor locator 
+- apply business rules to appointment selection, build a flexible rule engine
+- create patients
+- different patient registration page, with patient status (TC Eligible, insurance, etc)
+- view patient detail on appointment
+- double click appointment - update?? diff user type update: facility vs doctor
+- on doctor side - ability to cancel
+- set status of appointment (scheduled, canceled, no show), use different color
+- reporting: key metrics - # of bookings, # of no shows
+- home page clean up and overall display menus
+- Use a dropdown menu for all the appointments functionalities: appointments, stats, user management
+- highlight current menu or have a breadcrum (not doing it for this version)
+- Use paypal login as final example to beautify login page
+- - self profile management (not doing it for this version)
+- add more elements to schedule (link to report), patients, report pages (user table)
+- Overall css styling
+- display certain menus depend on user
+
+-----------------------------------------
+Apointment Plus Web API
+site ID :  appointplus395/42
+API Key   0183c59972626a190a39190fd900499ad3664d71
+Testing Tool: https://ws.appointment-plus.com/tester/index.php
+Usage example: https://ws1.appointment-plus.com/Locations/GetLocations
+https://ws2.appointment-plus.com/Locations/GetLocations
+
+
+System Users:
+System Admin: superuser superuser123 1438
+Facility Admin: shady groove 1466
+Facility Staff: john smith 1467
+Doctor Office Admin: abc cardio 1470
+Doctor Office Staff: phil philson 1471
+
+Appointment Status:
+Scheduled: 247
+Confirmed: 248
+Complete: 249
+Rescheduled: 250
+Cancelled: 251
+No Show: 252
+
+247,248,249,250,252
+
+----------------------
+Appoinment section access privileges:
+System Admin: everything, but mainly just to create faciility admin and doctor office admins
+
+Facility Admin: can't view report
+Facility Staff: can't view report, cannot view user management
+
+Doctor Office Admin: can't view report
+Doctor Office Staff: can't view user management

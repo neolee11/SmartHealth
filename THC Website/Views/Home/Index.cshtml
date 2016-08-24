@@ -1,0 +1,227 @@
+﻿    <!-- Preloading -->
+@*<div id="preload">
+        <div class="spinner">
+            <div class="rect1"></div>
+            <div class="rect2"></div>
+            <div class="rect3"></div>
+            <div class="rect4"></div>
+            <div class="rect5"></div>
+        </div>
+    </div>*@
+<!--End Preloading-->
+@{
+    ViewBag.Title = "Home - HealthCare Continuum Solutions";
+}
+
+@section scripts
+{
+    <script>
+        $(function() {
+            //$('#slides').superslides(
+            //    {
+            //        play: 2000,
+            //        animation_speed: 5000,
+            //        animation_easing: 'swing',
+            //        animation: 'slide',
+            //    }
+            //);
+
+            //$('#slides').superslides('start');
+
+            //setInterval(function() {
+            //    $('#slides').superslides('animate', 'next');
+            //}, 5000);
+
+            //$('#slides').superslides({ hashchange: false, play: 5000, animation_speed: 3000 });
+        });
+    </script>    
+}
+
+<div id="slides">
+
+    <ul class="slides-container">
+
+        <!--Slider 1-->
+        <li>
+            <img src="~/img/mainImage1.jpg" alt="Integrated Delivery Network Solutions">
+            <div class="container text-center">
+                <h2 class="slide-one wow fadeInDown" align="center">Integrated Solutions</h2>
+                <p class="slide-one">
+                    We deliver integrated delivery network solutions to optimizing<br />
+                    the comprehensive delivery of continuum health services <br />
+                    spanning all levels of intensity ofcare. <br> include everything<br /><br />
+                </p>
+                @*<a class="button button-light-red wow fadeInLeft" href="#more_IntegratedSol">Learn More</a>*@
+            </div>
+        </li>
+        <!--End Slider 1-->
+        <!--Slider 1-->
+        <li>
+            <img src="~/img/mainImage2.jpg" alt="">
+            <div class="container text-center">
+                <h2 class="slide-two wow fadeInDown" align="center">Data Driven accountability</h2>
+                <p class="slide-two">
+                    Identify quality metrics and provide comprehensive<br />
+                    analytic reports on data tracking systems. <br>
+                    components which include everything<br /><br />
+                </p>
+                @*<a class="button button-yellow wow fadeInLeft" href="#more_DataDriven">Learn More</a>*@
+            </div>
+        </li>
+        <!--End Slider 2-->
+        <!--Slider 3-->
+        <li>
+            <img src="~/img/mainImage3.jpg" alt="Partnercentric">
+            <div class="container text-center">
+                <h2 class="slide-three wow fadeInDown">Partnercentric Ecosystem</h2>
+                <p class="slide-three">
+                    Shared business environment to continuously<br />
+                    enhance productivity to our partner healthcare
+                    providers. <br /><br />
+                </p>
+                @*<a class="button button-white wow fadeInLeft" href="#more_PartnerCentric">Learn More</a>*@
+            </div>
+        </li>
+        <!--End Slider 3-->
+    </ul>
+
+    <!--End Navgation-->
+    <nav class="slides-navigation">
+        <div class="container">
+            <a href="#" class="next"><i class="fa fa-angle-right"></i></a>
+            <a href="#" class="prev"><i class="fa fa-angle-left"></i></a>
+        </div>
+    </nav>
+</div>
+<!--End Slider-->
+
+<div id="home">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12 text-center">
+                <!--Header-->
+                <h1 class="wow fadeInUp">Simple & Easy Healthcare IT Solutions</h1>
+                <!--Sub Head-->
+                <br />
+                <p class="slide-one">
+                    We will use our expertise in order to deliver streamlined solutions that will fit your business,
+                    no matter in which part of the ecosystem you are. Ask us about our training modules as well.
+                </p>
+            </div>
+            <!--Content-->
+            <div class="col-lg-12 home-content text-center">
+                <div class="row">
+                    <div class="col-lg-4 wow fadeInLeft">
+                        <h3>Information Technology Expertise</h3>
+                        <p class="detail">
+                            Our solution suites feature the latest, more stable technologies out there. We do not only solve problems, but we solve them with the right set of tools.
+                            We have dedicated experts with different Tech backgrounds that ensure the efficiency and usability of our systems.
+                        </p>
+                        @*<a class="button button-light-red" href="#">Check!</a>*@
+                    </div>
+                    <div class="col-lg-4 wow fadeInUp"><img src="~/img/diamond.png" alt=""></div>
+                    <div class="col-lg-4 wow fadeInRight">
+                        <h3>Healthcare Expertise</h3>
+                        <p class="detail">
+                            Our core employees have more than 20 years of cummulative experience within the healthcare industry, from caregiver to patients standpoint.
+                            We understand the challenges the different shareholders are facing, and that expertise helps us tailor solutions that address those challenges.
+                        </p>
+                        @*<a class="button button-light-red" href="#">Check!</a>*@
+                    </div><br /><br />
+                </div>
+            </div><!--End Content-->
+        </div><!--End Row-->
+    </div><!--Container-->
+</div>
+
+
+
+
+<!--Content-->
+<div id="content">
+    <div class="container">
+        <div id="more_IntegratedSol" class="container" style="display: none;">
+            <p>This is some more info on Integrated solutions  ... </p>
+
+        </div>
+        <div id="more_DataDriven" class="container" style="display: none;">
+            <p>This is some more info on Data Driven accountability  ... </p>
+        </div>
+        <div id="more_PartnerCentric" class="container" style="display: none;">
+            <p>This is some more info on Partnercentric Ecosystem ...</p>
+        </div>
+        <br /><br />
+
+        <div class="row">
+            <h2>Our Core Mission </h2>
+            <div class="col-lg-12 contents">
+                <div class="row">
+                    <div class="col-lg-6 box">
+                        <ul>
+                            <li class="wow fadeInLeft">
+                                <img src="img/love.png" alt="">
+                                <div class="box">
+                                    <h3>Love elegant, simple solutions?</h3>
+                                    <p>
+                                        HealthCare Continuum Solutions' software suites are well known for addressing a real life problem and formulating
+                                        a simple, elegant and easy to use solution.
+                                    </p>
+                                </div>
+                            </li>
+                            <li class="boxes wow fadeInLeft">
+                                <img src="img/fastwork.png" alt="">
+                                <div class="box">
+                                    <h3>Do you like efficiency?</h3>
+                                    <p>We build our software suites very efficient, therefore speed, reliability and robustness are core properties of our products.</p>
+                                </div>
+                            </li>
+                            <li class="boxes wow fadeInLeft">
+                                <img src="img/settings.png" alt="">
+                                <div class="box">
+                                    <h3>Do you enjoy flexibility?</h3>
+                                    <p>To unsure our solutions are tailored to your needs, we make sure they are highly configurable and customizable.</p>
+                                </div>
+                            </li>
+                            <li class="boxes wow fadeInLeft">
+                                <img src="img/love.png" alt="">
+                                <div class="box">
+                                    <h3>Do you believe in constat improvement?</h3>
+                                    <p>So do we! For that reason, the feedback we receive from our users is key into delivering our next generation of products. </p>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!--Video-->
+                    <div class="col-lg-6 col-xs-12">
+                        <div class="video wow fadeInRight">
+                            <iframe src="https://player.vimeo.com/video/25708134?title=0&amp;byline=0&amp;portrait=0" width="400" height="225"></iframe>
+                        </div>
+                        <!--Video Content-->
+                        <div class="video wow fadeInRight col-xs-12 row">
+                            <div class="video-picture">
+                                <img src="~/img/video-sample-youtube.jpg" alt="" width="110" height="80" />
+                                @*<img src="img/video1.jpg" alt="">*@
+                            </div>
+                            <div class="video-box">
+                                <h3><a class="popup-youtube" href="http://www.youtube.com/watch?v=4RWHDnjbtgw">Sample YouTube Video - Our Mission</a></h3>
+                                <p>Sample video on our products suite - Youtube Source</p>
+                            </div>
+                        </div>
+                        <!--End Video Content-->
+                        <!--Video Content-->
+                        <div class="video wow fadeInRight col-xs-12 row">
+                            <div class="video-picture"><img src="img/video2.jpg" alt=""></div>
+                            <div class="video-box">
+                                <h3><a href="http://vimeo.com/29193046" class="popup-vimeo">Sample Vimeo Video - Our Team </a></h3>
+                                <p>Sample video on our  - Youtube Source.</p>
+                            </div>
+                        </div>
+                        <!--End Video Content-->
+                    </div>
+                </div>
+            </div><!--End Contents-->
+        </div><!--End Row-->
+    </div><!--End Container-->
+</div>
+<!--End Content-->

@@ -1,0 +1,302 @@
+﻿@model dynamic
+
+@{
+    ViewBag.Title = "Patient Management";
+}
+
+@*<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/start/jquery-ui.css">*@
+<link type="text/css" rel="stylesheet" href="/styles/jsgrid.min.css" />
+<link type="text/css" rel="stylesheet" href="/styles/jsgrid-theme.min.css" />
+<link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/start/jquery-ui.css">
+
+<style>
+       /*.ui-widget *, .ui-widget input, .ui-widget select, .ui-widget button  {
+        font-family: 'Helvetica Neue Light', 'Open Sans', Helvetica;
+        font-size: 14px;
+        font-weight: 300 !important;
+    }
+
+    .details-form-field input,
+    .details-form-field select {
+        width: 250px;
+        float: right;
+    }
+
+    .details-form-field {
+        margin: 30px 0;
+    }
+
+    .details-form-field:first-child {
+        margin-top: 10px;
+    }
+
+    .details-form-field:last-child {
+        margin-bottom: 10px;
+    }
+
+    .details-form-field button {
+        display: block;
+        width: 100px;
+        margin: 0 auto;
+    }
+
+    input.error, select.error {
+        border: 1px solid #ff9999;
+        background: #ffeeee;
+    }
+
+    label.error {
+        float: right;
+        margin-left: 100px;
+        font-size: .8em;
+        color: #ff6666;
+    }*/
+
+    input.error, select.error {
+        border: 1px solid #ff9999;
+        background: #ffeeee;
+    }
+
+    label.error {
+        float: right;
+        margin-left: 100px;
+        font-size: .8em;
+        color: #ff6666;
+    }
+
+    /*#mainContent input[type="text"], #mainContent input[type="email"] {
+        margin-bottom: 0;
+    }*/
+
+    input[type="text"],  input[type="email"] {
+        margin-bottom: 0;
+        color: black;
+    }
+</style>
+
+
+@section scripts{
+    <script src="~/Scripts/jquery-ui-1.11.4.min.js"></script>
+    <script type="text/javascript" src="/Scripts/jsgrid.min.js"></script>
+
+    <script>
+
+        $(function() {
+            userSession.loadUserSession();
+            userSession.enforceLogin();
+            if (!userSession.isUserLoggedIn()) return;
+
+            $("#jsGrid").jsGrid({
+                //height: "70%",
+                width: "100%",
+                editing: true,
+                autoload: true,
+                paging: true,
+                filtering: true,
+                sorting: true,
+                deleteConfirm: function(item) {
+                    return "The patient " + item.firstName + ' ' + item.lastName + " will be removed. Are you sure?";
+                },
+                rowClick: function(args) {
+                    showDetailsDialog("Edit", args.item);
+                },
+                controller: patientManager,
+                fields: [
+                    //{ name: "patientId", type: "number", title: 'ID', width: 40 },
+                    { name: "lastName", type: "text", title: 'Last Name', width: 50, autosearch: true },
+                    { name: "firstName", type: "text", title: 'First Name', width: 50, autosearch: true },
+                    { name: "DOB", type: "text", title: 'DOB', width: 40, filtering:false },
+                    { name: "email", type: "text", title: 'Email', width: 60, filtering: false },
+                    { name: "phone", type: "text", title: 'Phone', width: 50, filtering: false },
+                    //{ name: "Phone", type: "number", width: 50 },
+                    { name: "fin", type: "text", width: 60, title: 'FIN', filtering: false },
+                    //{ name: "Country", type: "select", items: db.countries, valueField: "Id", textField: "Name" },
+                    { name: "tcEligible", type: "checkbox", title: "TC Eligible", width: 30, sorting: false, filtering: false },
+                    { name: "insurance", type: "checkbox", title: "Insurance", width: 30, sorting: false, filtering: false },
+                    { name: "typeIns", type: "text", title: "Type INS", width: 60, sorting: false, filtering: false },
+                    {
+                        type: "control",
+                        modeSwitchButton: false,
+                        editButton: false,
+                        headerTemplate: function() {
+                            return $("<button>").attr("type", "button").text("Add")
+                                .on("click", function() {
+                                    showDetailsDialog("Add", {});
+                                });
+                        }
+                    }
+                ]
+            });
+
+            $("#detailsDialog").dialog({
+                autoOpen: false,
+                width: 500,
+                close: function() {
+                    $("#detailsForm").validate().resetForm();
+                    $("#detailsForm").find(".error").removeClass("error");
+                }
+            });
+
+            $("#detailsForm").validate({
+                rules: {
+                    txtLastName: "required",
+                    txtFirstName: "required",
+                    txtDob: "required"
+                    //age: { required: true, range: [18, 150] },
+                    //address: { required: true, minlength: 10 },
+                    //country: "required"
+                },
+                messages: {
+                    txtLastName: "Please enter last name",
+                    txtFirstName: "Please enter first name",
+                    txtDob: "Please enter date of birth"
+                    //age: "Please enter valid age",
+                    //address: "Please enter address (more than 10 chars)",
+                    //country: "Please select country"
+                },
+                submitHandler: function() {
+                    formSubmitHandler();
+                }
+            });
+
+            var formSubmitHandler = $.noop;
+            var showDetailsDialog = function (dialogType, client) {
+                $('#chkTCEligible').prop('checked', false);
+                $('#chkInsurance').prop('checked', false);
+
+                $("#txtFirstName").val(client.firstName);
+                $("#txtLastName").val(client.lastName);
+                $("#txtDob").val(client.DOB);
+                $('#txtEmail').val(client.email);
+                $('#txtPhone').val(client.phone);
+                $('#txtFIN').val(client.fin);
+                $('#chkTCEligible').prop('checked', client.tcEligible);
+                $('#chkInsurance').prop('checked', client.insurance);
+                $('#txtTypeINS').val(client.typeIns);
+                //$("#married").prop("checked", client.Married);
+
+                //if (dialogType === "Edit") {
+                //    $('#txtFirstName').attr('readonly', true);
+                //    $('#txtLastName').attr('readonly', true);
+                //} else {
+                //    $('#txtFirstName').attr('readonly', false);
+                //    $('#txtLastName').attr('readonly', false);
+                //}
+
+                formSubmitHandler = function() {
+                    saveClient(client, dialogType === "Add");
+                };
+                $("#detailsDialog").dialog("option", "title", dialogType + " Client")
+                    .dialog("open");
+            };
+
+            var saveClient = function(client, isNew) {
+                $.extend(client, {
+                    firstName: $("#txtFirstName").val(),
+                    lastName: $("#txtLastName").val(),
+                    DOB: $("#txtDob").val(),
+                    email: $("#txtEmail").val(),
+                    phone: $("#txtPhone").val(),
+                    fin: $('#txtFIN').val(),
+                    tcEligible: $('#chkTCEligible').is(":checked"),
+                    insurance: $('#chkInsurance').is(":checked"),
+                    typeIns: $('#txtTypeINS').val()
+                    //Age: parseInt($("#age").val(), 10),
+                    //Address: $("#address").val(),
+                    //Country: parseInt($("#country").val(), 10),
+                    //Married: $("#married").is(":checked")
+                });
+                $("#jsGrid").jsGrid(isNew ? "insertItem" : "updateItem", client);
+                $("#detailsDialog").dialog("close");
+            };
+        });
+
+        $('#fakeCreate').on('click', function() {
+            var client = {
+                firstName: $("#txtFirstName").val(),
+                lastName: $("#txtLastName").val(),
+                DOB: $("#txtDob").val(),
+                email: $("#txtEmail").val(),
+                phone: $("#txtPhone").val(),
+                fin: $('#txtFIN').val(),
+                tcEligible: $('#chkTCEligible').is(":checked"),
+                insurance: $('#chkInsurance').is(":checked"),
+                typeIns: $('#txtTypeINS').val()
+            };
+            patientManager.insertItem(client);
+        });
+
+    </script>
+}
+
+@*<h2>@ViewBag.Title</h2>*@
+<h2 class="text-center no-top-margin">@ViewBag.Title</h2>
+
+@*<button id="fakeCreate">Fake create</button>*@
+
+<div id="mainContent" class="container-fluid">
+    <div id="newUser" style="display: none">
+        <label for="txtFIN">Transitional Care Eligible</label>
+        <input type="radio" id="radioTCE" value="" />
+    </div>
+
+    <div id="jsGrid"></div>
+    <br />
+</div>
+
+<div id="detailsDialog">
+    <form id="detailsForm" class="form-horizontal">
+        <div class="details-form-field form-group">
+            <label for="txtFirstName" class="col-md-4 control-label">First Name</label>
+            <div class="col-md-8">
+                <input type="text" id="txtFirstName" name="txtFirstName" class="form-control" />
+            </div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="txtLastName" class="col-md-4 control-label">Last Name</label>
+            <div class="col-md-8">
+                <input type="text" id="txtLastName" name="txtLastName" class="form-control" />
+            </div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="txtDob" class="col-md-4 control-label">DOB</label>
+            <div class="col-md-8"><input type="date" id="txtDob" name="txtDob" class="form-control" /></div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="txtEmail" class="col-md-4 control-label">Email</label>
+            <div class="col-md-8"><input type="text" id="txtEmail" name="txtEmail" class="form-control" /></div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="txtPhone" class="col-md-4 control-label">Phone</label>
+            <div class="col-md-8"><input type="text" id="txtPhone" name="txtPhone" class="form-control" /></div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="txtFIN" class="col-md-4 control-label">FIN</label>
+            <div class="col-md-8"><input type="text" id="txtFIN" name="txtFIN" class="form-control" /></div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="chkTCEligible" class="col-md-4 control-label">Transitional Care Eligible</label>
+            <div class="col-md-2"><input id="chkTCEligible" name="chkTCEligible" type="checkbox" class="form-control" /></div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="chkInsurance" class="col-md-4 control-label">Insurance</label>
+            <div class="col-md-2"><input id="chkInsurance" name="chkInsurance" type="checkbox" class="form-control" /></div>
+        </div>
+
+        <div class="details-form-field form-group">
+            <label for="txtTypeINS" class="col-md-4 control-label">Type INS</label>
+            <div class="col-md-8"><input type="text" id="txtTypeINS" name="txtTypeINS" class="form-control" /></div>
+        </div>
+
+        <div class="details-form-field">
+            <button type="submit" id="save" class="center-block btn btn-primary">Save</button>
+        </div>
+    </form>
+</div>
